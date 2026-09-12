@@ -18,4 +18,12 @@ await mkdir(path.join(runtime, 'backend'), { recursive: true });
 await cp(path.join(root, 'backend/dist'), path.join(runtime, 'backend/dist'), { recursive: true });
 await cp(path.join(root, 'frontend/dist'), path.join(runtime, 'frontend/dist'), { recursive: true });
 await writeFile(path.join(runtime, 'backend/package.json'), JSON.stringify({ type: 'module' }));
+// Copy only the installed production graph, including sharp's host-specific native libraries.
+const listed = spawnSync(process.execPath, [process.env.npm_execpath, 'ls', '--omit=dev', '--all', '--parseable'], { cwd: desktop, encoding: 'utf8' });
+if (listed.status !== 0) throw new Error(`Cannot resolve desktop production dependencies: ${listed.stderr}`);
+for (const source of [...new Set(listed.stdout.trim().split('\n'))]) {
+  const relative = path.relative(desktop, source);
+  if (!relative || !relative.startsWith(`node_modules${path.sep}`)) continue;
+  await cp(source, path.join(runtime, relative), { recursive: true, dereference: true });
+}
 console.log('Desktop runtime prepared.');

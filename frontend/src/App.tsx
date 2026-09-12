@@ -41,6 +41,15 @@ export default function App() {
   const imageInput = useRef<HTMLInputElement>(null);
   const projectInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
+    const onDownload = (event: Event) => {
+      const detail = (event as CustomEvent<{ filename: string; failed: boolean }>).detail;
+      if (detail.failed) message.error(`Export failed: ${detail.filename}. Try exporting again.`);
+      else message.success(`Saved to Downloads: ${detail.filename}`);
+    };
+    window.addEventListener('jianpu-desktop-download', onDownload);
+    return () => window.removeEventListener('jianpu-desktop-download', onDownload);
+  }, [message]);
+  useEffect(() => {
     let active = true;
     setLoadedImage(null); setImageError('');
     if (page && project) loadImage(page.image.dataUrl).then(image => { if (active) setLoadedImage({ projectId: project.id, pageId: page.id, image }); })

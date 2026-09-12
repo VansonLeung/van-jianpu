@@ -8,3 +8,6 @@ playwright-report/
 *.log
 desktop/runtime/
 desktop/release/
+desktop/build/
+desktop/artifacts/
+desktop/.hutch/

@@ -32,9 +32,13 @@ npm --prefix frontend run dev
 
 Open the Vite URL shown in the terminal (normally http://127.0.0.1:5173). Vite proxies `/api` to port 3001. If changing the backend port, also update the proxy in `frontend/vite.config.ts`.
 
-## Electron desktop app
+## Electrobun desktop app
 
-From the project root (`codes/v4` in this workspace):
+The desktop package uses **Electrobun 2.0.1**, the operating system's native webview, and a bundled Bun runtime for the existing Express/`sharp` backend. Chromium/CEF and Electron are not bundled. Browser mode and the three independent package installations remain supported.
+
+On this macOS arm64 host, the installed application occupies about **102 MiB on disk**, compared with **322 MiB** for the previous Electron build (about 68% less). The DMG is approximately **31 MiB**. Electrobun expands its compressed application payload at first launch, so the unopened app bundle size is smaller than its installed footprint.
+
+From the project root (`codes/v4`):
 
 ```sh
 npm --prefix frontend install
@@ -43,24 +47,30 @@ npm --prefix desktop install
 npm --prefix desktop start
 ```
 
-The desktop launcher builds the frontend and backend, then opens **Van Jianpu** in Electron. No separate Node server or Vite terminal is needed. After a build, `npm --prefix desktop run start:built` launches immediately; rerun `desktop start` after changing frontend/backend code. `desktop` has its own package, lockfile, and `node_modules`, alongside the independent frontend/backend packages.
+Use Node.js 22.12+ or 24+ for development. You do not need to install Bun globally: Electrobun's npm bootstrap downloads and verifies its pinned Hutch/devkit and Bun toolchain on first build. That first build requires internet access. End users need neither Node.js nor Bun installed.
 
-The app includes image pages, line editing, the SVG renderer, Erhu playback, LLM settings, and project exports. Image/project inputs use native file pickers; exports offer a native save dialog, and clicking a crop opens a separate image window. The File menu can open the app's data folder. Window size/position are remembered. On macOS, closing the last window keeps the app running; use Quit to exit, or click its Dock icon to reopen it.
+`desktop start` builds both web packages, copies compiled assets and production dependencies into the desktop runtime, checks types, builds the native app, and launches it. Use `npm --prefix desktop run start:built` to launch the existing development build. Each package retains its own lockfile and `node_modules`.
 
-Desktop projects and settings are stored separately from browser projects, under a stable `jianpu://scanner` origin in Electron's user-data folder. Closing/reopening the app preserves the current project even though its private backend uses a different port each launch. To move work between browser and desktop, export and import an editable `.jianpu` project (older `.jianpu.json` files still open). Only one instance uses a given desktop profile at a time.
+The app retains image pages, crop rectangles, keyboard/context-menu editing, project renaming, SVG rendering, `.jianpu` archives, LLM scanning, and Erhu playback. Image/project inputs use the native file picker. On macOS, **exports go directly to Downloads**, with a completion message; duplicate filenames receive a numeric suffix instead of overwriting an existing file. **File → Open Downloads folder** reveals the destination. Clicking a crop opens an isolated image window. Window geometry is remembered. Closing the last window quits the app on all platforms.
 
-Source launches use the existing project `.env` as a fallback. Packaged applications **do not contain that file or its credentials**. In a packaged app, configure the provider through **LLM settings**, or place a private `.env` in **File → Open app data folder** and restart. Environment variables take precedence, then the desktop data-folder `.env`, then the source `.env` for development only. Keys entered in the settings drawer still last only for the current window session. The data folder is normally `~/Library/Application Support/Van Jianpu` on macOS, `%APPDATA%/Van Jianpu` on Windows, and `~/.config/Van Jianpu` on Linux. `JIANPU_DESKTOP_DATA_DIR` can select an isolated profile for testing.
+The UI runs in a sandboxed native webview without a privileged Bun/Node bridge. An authenticated loopback server serves the frontend and API with an HttpOnly session cookie, origin checks, a restrictive content security policy, and navigation rules. The server remembers a per-profile port to preserve the webview's IndexedDB origin across restarts. Another instance activates the existing window. If an unrelated application occupies that saved port, startup reports the conflict rather than silently switching to an empty storage origin.
 
-Build an unpacked application or distributable installers:
+**Moving from Electron:** open the previous Electron app and export the current project as `.jianpu` (older JSON exports work too), then choose **Open project** in Electrobun. The browser engines have separate IndexedDB stores; the migration does not modify or delete Electron's saved data. Keep your previous Electron app until this transfer is complete. New builds use `desktop/build/` and do not require Electron dependencies.
+
+Development and stable builds have separate profiles. The native data folder is normally `~/Library/Application Support/Van Jianpu Electrobun/dev` or `.../stable` on macOS; use **File → Open app data folder** for the exact path on your platform. `JIANPU_DESKTOP_DATA_DIR` selects a specific profile. Keep `server.json` intact: it records the storage port and the current private session token. To move between profiles, export/import a project.
+
+Source launches use the project `.env` as a fallback. Packaged applications contain **no source `.env`, credentials, saved projects, or test fixtures**. Configure the provider through **LLM settings**, or place a private `.env` in the app data folder and restart. Process environment variables take precedence, then the data-folder `.env`, then the source `.env` in development only. Keys entered in Settings remain in memory for the current window session.
+
+Build the development app or a stable distributable:
 
 ```sh
+npm --prefix desktop run build
 npm --prefix desktop run package
-npm --prefix desktop run dist
 ```
 
-Outputs go to `desktop/release/`. Targets are macOS DMG/ZIP, Windows NSIS, and Linux AppImage. Build on the target operating system and architecture so `sharp`'s native libraries match; only the current host's build is verified locally. Packaged users do not need Node.js. Local builds can be unsigned; public distribution requires the appropriate platform signing/notarization setup. These scripts never publish artifacts automatically. The initial app uses Electron's default icon.
+Development output is in `desktop/build/dev-macos-arm64/` on this Mac. Stable output is in `desktop/build/stable-macos-arm64/`, with distributable artifacts under `desktop/artifacts/`; `npm --prefix desktop run dist` is an alias for packaging. Builds never publish automatically. Signing/notarization are disabled for local builds; configure them in `desktop/electrobun.config.ts` for public distribution.
 
-The desktop runtime includes only compiled application assets and production dependencies; the build excludes source `.env` files, saved projects, and test fixtures. The renderer is sandboxed with Node integration disabled. A registered secure app protocol serves the UI and forwards API calls through a private authenticated loopback connection. No fixed port is required, and browser-mode serving remains unchanged. This follows Electron's [custom protocol](https://www.electronjs.org/docs/latest/api/protocol) and [renderer isolation](https://www.electronjs.org/docs/latest/tutorial/security) guidance.
+Build on the target operating system and architecture so the native webview and `sharp` libraries match. macOS uses WKWebView, Windows uses WebView2, and Linux uses WebKitGTK; Windows/Linux packaging and playback need verification on their respective hosts. Only macOS arm64 is verified here. CEF remains explicitly disabled on every platform to preserve the size benefit. See Electrobun's [renderer documentation](https://framework.blackboard.sh/electrobun/apis/bundling-cef/) and [build configuration](https://framework.blackboard.sh/electrobun/apis/cli/build-configuration/).
 
 ## Configuration
 
@@ -220,14 +230,28 @@ npm --prefix backend test
 npm --prefix frontend run test:e2e
 ```
 
-For Electron, build its runtime and run its integration checks:
+For Electrobun, build and run backend checks:
 
 ```sh
 npm --prefix desktop run build
 npm --prefix desktop test
 ```
 
-These launch real Electron windows with temporary profiles and a mock LLM provider, then check sandboxing, native image import, the bundled API and `sharp`, note editing, export, recovery after restart, crop windows, and actual Erhu audio output. Set `JIANPU_DESKTOP_EXECUTABLE` to a packaged executable path to run the same checks against a packaged build. Desktop tests require a graphical session (or Xvfb on Linux).
+To include the real native-window smoke test on this Mac:
+
+```sh
+JIANPU_DESKTOP_EXECUTABLE="$PWD/desktop/build/dev-macos-arm64/Van Jianpu-dev.app/Contents/MacOS/launcher" npm --prefix desktop test
+```
+
+Use the stable app's `Contents/MacOS/launcher` path to test the packaged build. Native checks run with temporary profiles and a mock LLM provider; they exercise imports, the actual Bun/Express/`sharp` backend, editing, archive round trips, real Downloads output, crop windows, navigation restrictions, Erhu audio output, and restart recovery. The test harness is external to the application bundle and loaded only when `JIANPU_DESKTOP_TEST_SCRIPT` is explicitly supplied. Without an executable, the native smoke test is reported as skipped. Native tests require a graphical session.
+
+The frontend suite can also run against WebKit:
+
+```sh
+cd frontend
+npx playwright install webkit
+npm run test:e2e -- --browser=webkit
+```
 
 If Chromium is not installed for Playwright, run `npx playwright install chromium` inside `frontend` first. Browser checks launch the production backend on port 3101 and mock LLM responses. They cover drawing, source coordinates, page/line ordering, panel resizing, note editing, scans across page switches, refresh recovery, legacy migration, settings, and project import/export. Playback checks load the actual bundled Erhu soundfont and measure Web Audio output for play/pause/resume, loops, and edits; they also check silent placeholders, page following, load failures, and settings recovery. Pure timing checks cover pitch mapping, durations, and repeats. Backend integration checks use a local mock provider with the supplied real image fixture.
 

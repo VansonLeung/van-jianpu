@@ -8,7 +8,23 @@ import { updateProjectPage } from '../services/projectPages';
 export function useLineScanning(current: RefObject<ScannerProject | null>, update: Dispatch<SetStateAction<ScannerProject | null>>) {
   const [busy, setBusy] = useState(false);
   const controller = useRef<AbortController | null>(null);
-  useEffect(() => () => controller.current?.abort(), []);
+  const leaving = useRef(false);
+  useEffect(() => {
+    leaving.current = false;
+    // WebKit rejects pending fetches while navigating, before the document disappears.
+    // Keep saved scanning states intact so recovery marks them as interrupted.
+    const leave = () => { leaving.current = true; controller.current?.abort(); };
+    const resume = () => { leaving.current = false; };
+    window.addEventListener('beforeunload', leave);
+    window.addEventListener('pagehide', leave);
+    window.addEventListener('pageshow', resume);
+    return () => {
+      leave();
+      window.removeEventListener('beforeunload', leave);
+      window.removeEventListener('pagehide', leave);
+      window.removeEventListener('pageshow', resume);
+    };
+  }, []);
   const cancel = () => controller.current?.abort();
 
   async function scanLines(pageId: string, lines: NoteLine[], settings: LlmSettings) {
@@ -19,7 +35,7 @@ export function useLineScanning(current: RefObject<ScannerProject | null>, updat
     controller.current = requestController;
     setBusy(true);
     const patchLine = (line: NoteLine, patch: Partial<NoteLine>) => update(previous => {
-      if (previous?.id !== project.id) return previous;
+      if (leaving.current || previous?.id !== project.id) return previous;
       return updateProjectPage(previous, pageId, page => ({ ...page, lines: page.lines.map(existing => existing.id === line.id && existing.revision === line.revision
         ? { ...existing, ...patch, ...(existing.edited && patch.text !== undefined ? { text: existing.text } : {}) }
         : existing) }));
