@@ -67,13 +67,20 @@ test('desktop imports, scans through its bundled backend, edits, exports, and re
   await page.keyboard.press('ControlOrMeta+z');
   await expect(editor()).toHaveValue('1 - - 2_// ?');
   await editor().fill('5 - - 2_// ?');
-  const exported = path.join(profile, 'export.jianpu.json');
+  await page.getByRole('button', { name: 'Rename project', exact: true }).click();
+  await page.getByLabel('Project name', { exact: true }).fill('Desktop score');
+  await page.getByRole('button', { name: 'Rename', exact: true }).click();
+  const exported = path.join(profile, 'export.jianpu');
   await application.evaluate(({ session }, file) => {
     session.defaultSession.once('will-download', (_event, item) => item.setSavePath(file));
   }, exported);
   await page.getByRole('button', { name: 'Export', exact: true }).click();
-  await page.getByText('Editable project (.jianpu.json)', { exact: true }).click();
-  await expect.poll(async () => { try { return JSON.parse(await readFile(exported, 'utf8')).pages[0].lines[0].text; } catch { return ''; } }).toBe('5 - - 2_// ?');
+  await page.getByText('Editable project (.jianpu)', { exact: true }).click();
+  await expect.poll(async () => { try { return (await readFile(exported)).subarray(0, 2).toString(); } catch { return ''; } }).toBe('PK');
+  await page.getByTestId('project-input').setInputFiles(exported);
+  await page.getByRole('button', { name: 'Replace', exact: true }).click();
+  await expect(editor()).toHaveValue('5 - - 2_// ?');
+  await expect(page.locator('.document-caption strong')).toHaveText('Desktop score');
   await expect(page.getByText('Saved locally', { exact: true })).toBeVisible();
   await page.screenshot({ path: 'test-results/electron-scanner.png' });
   await application.close(); application = undefined;

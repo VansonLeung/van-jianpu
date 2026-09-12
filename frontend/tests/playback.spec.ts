@@ -1,7 +1,7 @@
+import { decodeProjectFile } from '../src/services/projectArchive';
 import { test, expect, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { compilePlayback, DEFAULT_PLAYBACK, playbackSignature } from '../src/services/playback/notationPlayback';
-import { validateAndMigrateProject } from '../src/services/projectValidation';
 import type { ScannerProject } from '../src/types/scanner';
 
 function projectWith(text: string): ScannerProject {
@@ -128,8 +128,8 @@ test('playback settings persist, invalid input fails clearly, and correction aud
   await expect(page.getByRole('spinbutton', { name: 'Playback tempo' })).toHaveValue('120');
   await page.getByRole('button', { name: 'Export', exact: true }).click();
   const download = page.waitForEvent('download');
-  await page.getByText('Editable project (.jianpu.json)', { exact: true }).click();
-  const saved = validateAndMigrateProject(JSON.parse(await readFile((await (await download).path())!, 'utf8')));
+  await page.getByText('Editable project (.jianpu)', { exact: true }).click();
+  const saved = decodeProjectFile(await readFile((await (await download).path())!));
   expect(saved.playback).toEqual({ ...DEFAULT_PLAYBACK, tempo: 120, tonic: 2 });
   const notes = page.getByRole('listbox', { name: 'Notes for line 1', exact: true });
   await notes.getByRole('option').first().click(); await page.keyboard.press('3');

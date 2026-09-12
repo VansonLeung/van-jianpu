@@ -1,6 +1,7 @@
 import type { ScannerPage, ScannerProject } from '../types/scanner';
 import { readImageFile } from './imageProcessing';
 import { MAX_PROJECT_BYTES, MAX_PROJECT_PAGES } from './projectValidation';
+import { projectName } from './projectName';
 
 export function updateProjectPage(project: ScannerProject | null, pageId: string, change: (page: ScannerPage) => ScannerPage): ScannerProject | null {
   return project && { ...project, pages: project.pages.map(page => page.id === pageId ? change(page) : page) };
@@ -39,6 +40,7 @@ export async function appendImagePages(project: ScannerProject | null, files: Fi
     next.pages.push(page);
   }
   next.activePageId = next.pages[firstNewIndex].id;
+  next.name = projectName(next);
   return next;
 }
 export function projectTranscriptionText(project: ScannerProject): string {

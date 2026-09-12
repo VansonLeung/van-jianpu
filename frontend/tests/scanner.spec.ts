@@ -48,7 +48,7 @@ test('scan, edit during a request, retry, refresh, export and reopen a project',
   expect((await textDownload).suggestedFilename()).toMatch(/\.txt$/);
   await page.getByRole('button', { name: 'Export', exact: true }).click();
   const projectDownload = page.waitForEvent('download');
-  await page.getByText('Editable project (.jianpu.json)', { exact: true }).click();
+  await page.getByText('Editable project (.jianpu)', { exact: true }).click();
   const savedProject = await (await projectDownload).path();
   await page.getByTestId('project-input').setInputFiles(savedProject!);
   await page.getByRole('button', { name: 'Replace', exact: true }).click();

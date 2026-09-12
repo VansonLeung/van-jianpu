@@ -1,5 +1,5 @@
 {
-  "name": "jianpu-scanner-frontend",
+  "name": "van-jianpu-frontend",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -12,6 +12,7 @@
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
     "antd": "^6.0.0",
+    "fflate": "^0.8.3",
     "konva": "^10.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

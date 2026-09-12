@@ -17,6 +17,7 @@ export interface ScannerPage {
   lines: NoteLine[];
 }
 export interface ScannerProject {
+  name?: string;
   playback?: import('../services/playback/notationPlayback').PlaybackSettings;
   version: 2;
   id: string;

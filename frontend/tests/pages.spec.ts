@@ -1,3 +1,4 @@
+import { decodeProjectFile } from '../src/services/projectArchive';
 import { test, expect, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -57,7 +58,7 @@ test('multiple image imports append ordered pages; lines belong to their source 
   expect((await storedProject(page)).pages).toEqual(saved.pages);
 });
 
-test('page and line arrows/drag order survive text and JSON export, reopening, and refresh', async ({ page }) => {
+test('page and line arrows/drag order survive text and archive export, reopening, and refresh', async ({ page }) => {
   await openProject(page);
   await page.getByRole('button', { name: 'Move line 2 up', exact: true }).click();
   await expect(editor(page)).toHaveValue('2_//');
@@ -78,9 +79,9 @@ test('page and line arrows/drag order survive text and JSON export, reopening, a
   expect(await readFile((await (await textDownload).path())!, 'utf8')).toBe('3_//\n4_//\n\n2_//\n1_//\n');
   await page.getByRole('button', { name: 'Export', exact: true }).click();
   const download = page.waitForEvent('download');
-  await page.getByText('Editable project (.jianpu.json)', { exact: true }).click();
+  await page.getByText('Editable project (.jianpu)', { exact: true }).click();
   const path = (await (await download).path())!;
-  expect(JSON.parse(await readFile(path, 'utf8'))).toEqual(saved);
+  expect(decodeProjectFile(await readFile(path))).toEqual(saved);
   await page.getByTestId('project-input').setInputFiles(path);
   await page.getByRole('button', { name: 'Replace', exact: true }).click();
   await expect(editor(page)).toHaveValue('2_//');

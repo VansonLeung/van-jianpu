@@ -6,7 +6,10 @@ button, input, textarea { font: inherit; }
 .app-toolbar { min-height: 62px; padding: 12px 20px; background: #fff; border-bottom: 1px solid #e5e8ee; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .document-title { display: flex; gap: 12px; align-items: center; min-width: 0; font-weight: 600; }
 .document-title > .anticon { color: #315eea; font-size: 20px; }
-.document-title > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.document-caption { min-width: 0; display: flex; flex-direction: column; }
+.document-caption > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.document-caption small { color: #667085; font-weight: 400; }
+.document-title > button { flex-shrink: 0; }
 .app-toolbar > .ant-space { flex-shrink: 0; }
 .editor-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 220px minmax(240px, 1fr) 8px var(--results-width, 390px); }
 .line-sidebar, .results-panel { display: flex; flex-direction: column; min-height: 0; background: #fff; }

@@ -20,6 +20,9 @@ export async function readImageFile(file: File): Promise<ImageSource> {
   });
   const image = await loadImage(dataUrl);
   if (image.naturalWidth * image.naturalHeight > 40_000_000) throw new Error('Choose an image with fewer than 40 megapixels.');
+  // Keep JPEG bytes losslessly. The same browser decoder applies EXIF orientation here,
+  // on reopening, and when cropImage draws the image; converting photos to PNG bloats projects.
+  if (file.type === 'image/jpeg') return { name: file.name, width: image.naturalWidth, height: image.naturalHeight, dataUrl };
   // Normalize EXIF orientation by drawing the decoded image. Crop coordinates use these pixels.
   const canvas = document.createElement('canvas');
   canvas.width = image.naturalWidth;

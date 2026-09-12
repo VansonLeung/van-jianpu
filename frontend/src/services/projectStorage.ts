@@ -1,6 +1,7 @@
 import type { ScannerProject } from '../types/scanner';
 import { loadImage } from './imageProcessing';
 import { MAX_PROJECT_BYTES, validateAndMigrateProject } from './projectValidation';
+import { readProjectFile } from './projectArchiveClient';
 
 let databasePromise: Promise<IDBDatabase> | undefined;
 function openDatabase() {
@@ -43,7 +44,7 @@ export function recoverProject(project: ScannerProject): ScannerProject {
 
 export async function importProject(file: File): Promise<ScannerProject> {
   if (file.size > MAX_PROJECT_BYTES) throw new Error('The project exceeds the 100 MB limit.');
-  const project = validateAndMigrateProject(JSON.parse(await file.text()));
+  const project = await readProjectFile(file);
   for (const { image } of project.pages) {
     const decoded = await loadImage(image.dataUrl);
     if (decoded.naturalWidth !== image.width || decoded.naturalHeight !== image.height) throw new Error('An image has inconsistent dimensions in this project.');
@@ -51,7 +52,7 @@ export async function importProject(file: File): Promise<ScannerProject> {
   return recoverProject(project);
 }
 
-export function downloadFile(filename: string, contents: string, type: string) {
+export function downloadFile(filename: string, contents: BlobPart, type: string) {
   const url = URL.createObjectURL(new Blob([contents], { type }));
   const link = document.createElement('a');
   link.href = url;

@@ -9,6 +9,9 @@ import { ResizableEditorLayout } from './components/ResizableEditorLayout';
 import { PlaybackProvider } from './components/playback/PlaybackProvider';
 import { PlaybackToolbar } from './components/playback/PlaybackToolbar';
 import { projectSvg } from './services/rendering/jianpuSvg';
+import { ProjectTitle } from './components/ProjectTitle';
+import { exportProject } from './services/projectArchiveClient';
+import { projectFilename } from './services/projectName';
 import { useScannerProject } from './hooks/useScannerProject';
 import { useLineScanning } from './hooks/useLineScanning';
 import { useLlmSettings } from './hooks/useLlmSettings';
@@ -24,21 +27,23 @@ export default function App() {
   const { settings, defaults, error: settingsError, updateSettings } = useLlmSettings();
   const { busy, cancel, scanLines } = useLineScanning(current, updateProject);
   const page = project?.pages.find(page => page.id === project.activePageId) || null;
-  const [loadedImage, setLoadedImage] = useState<{ pageId: string; image: HTMLImageElement } | null>(null);
-  const image = loadedImage?.pageId === page?.id ? loadedImage?.image : null;
+  const [loadedImage, setLoadedImage] = useState<{ projectId: string; pageId: string; image: HTMLImageElement } | null>(null);
+  const image = loadedImage?.projectId === project?.id && loadedImage?.pageId === page?.id ? loadedImage?.image : null;
   const [imageError, setImageError] = useState('');
   const [selectedByPage, setSelectedByPage] = useState<Record<string, string | null>>({});
   const selectedId = page ? selectedByPage[page.id] !== undefined ? selectedByPage[page.id] : page.lines[0]?.id || null : null;
   const setSelectedId = (id: string | null) => { if (page) setSelectedByPage(previous => ({ ...previous, [page.id]: id })); };
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const exportLock = useRef(false);
   const importLock = useRef(false);
   const imageInput = useRef<HTMLInputElement>(null);
   const projectInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     let active = true;
     setLoadedImage(null); setImageError('');
-    if (page) loadImage(page.image.dataUrl).then(image => { if (active) setLoadedImage({ pageId: page.id, image }); })
+    if (page && project) loadImage(page.image.dataUrl).then(image => { if (active) setLoadedImage({ projectId: project.id, pageId: page.id, image }); })
       .catch(error => { if (active) setImageError(error.message); });
     return () => { active = false; };
   }, [project?.id, page?.id, page?.image.dataUrl]);
@@ -90,10 +95,15 @@ export default function App() {
     if (!settings.baseUrl || !settings.model) { setSettingsOpen(true); message.info('Set the LLM endpoint and model before scanning.'); return; }
     void scanLines(page.id, lines, settings);
   }
-  function exportFile(format: string) {
-    if (!project) return;
-    const name = project.pages[0]?.image.name.replace(/\.[^.]+$/, '') || 'jianpu';
-    if (format === 'project') downloadFile(`${name}.jianpu.json`, JSON.stringify(project), 'application/json');
+  async function exportFile(format: string) {
+    if (!project || exportLock.current) return;
+    const name = projectFilename(project);
+    if (format === 'project') {
+      exportLock.current = true; setExporting(true);
+      try { downloadFile(`${name}.jianpu`, await exportProject(project), 'application/zip'); }
+      catch (error) { message.error(error instanceof Error ? error.message : 'Unable to export project.'); }
+      finally { exportLock.current = false; setExporting(false); }
+    }
     else if (format === 'svg') {
       try { downloadFile(`${name}.svg`, projectSvg(project), 'image/svg+xml;charset=utf-8'); }
       catch (error) { message.error(error instanceof Error ? error.message : 'Unable to render notation.'); }
@@ -109,17 +119,17 @@ export default function App() {
   return <PlaybackProvider project={project} onSettings={playback => updateProject(previous => previous && ({ ...previous, playback }))}
     onFollowPage={id => updateProject(previous => previous && ({ ...previous, activePageId: id }))}><div className="scanner-app">
     <header className="app-toolbar">
-      <div className="document-title"><PictureOutlined /><span title={page?.image.name}>{page ? `Page ${project!.pages.indexOf(page) + 1} · ${page.image.name}` : 'Van Jianpu'}</span></div>
+      <ProjectTitle key={project?.id || 'empty'} project={project} onRename={name => updateProject(previous => previous && ({ ...previous, name }))} />
       <Space size={8} wrap>
         <Button aria-label="Add images" icon={<UploadOutlined />} disabled={!ready || busy || importing} onClick={() => imageInput.current?.click()}>Add images</Button>
         <Button aria-label="Open project" icon={<FolderOpenOutlined />} disabled={!ready || busy || importing} onClick={() => projectInput.current?.click()}>Open project</Button>
-        <Dropdown trigger={['click']} menu={{ items: [{ key: 'text', label: 'Jianpu text (.txt)', disabled: !project?.pages.some(page => page.lines.length) }, { key: 'svg', label: 'Rendered notation (.svg)', disabled: !project?.pages.length }, { key: 'project', label: 'Editable project (.jianpu.json)' }], onClick: ({ key }) => exportFile(key) }} disabled={!project}>
-          <Button aria-label="Export" icon={<DownloadOutlined />}>Export</Button>
+        <Dropdown trigger={['click']} menu={{ items: [{ key: 'text', label: 'Jianpu text (.txt)', disabled: !project?.pages.some(page => page.lines.length) }, { key: 'svg', label: 'Rendered notation (.svg)', disabled: !project?.pages.length }, { key: 'project', label: 'Editable project (.jianpu)' }], onClick: ({ key }) => void exportFile(key) }} disabled={!project || exporting}>
+          <Button aria-label="Export" loading={exporting} icon={<DownloadOutlined />}>{exporting ? 'Exporting…' : 'Export'}</Button>
         </Dropdown>
         <Button aria-label="LLM settings" icon={<SettingOutlined />} disabled={busy} onClick={() => setSettingsOpen(true)} />
       </Space>
       <input ref={imageInput} data-testid="image-input" type="file" accept="image/png,image/jpeg,image/webp" multiple hidden onChange={event => { const files = Array.from(event.target.files || []); event.target.value = ''; void openFiles(files); }} />
-      <input ref={projectInput} data-testid="project-input" type="file" accept=".json,.jianpu.json" hidden onChange={event => { const files = Array.from(event.target.files || []); event.target.value = ''; void openFiles(files, true); }} />
+      <input ref={projectInput} data-testid="project-input" type="file" accept=".jianpu,.json,.jianpu.json" hidden onChange={event => { const files = Array.from(event.target.files || []); event.target.value = ''; void openFiles(files, true); }} />
     </header>
     {settingsError && <Alert type="warning" title={settingsError} closable />}
     {!!project?.pages.length && <PlaybackToolbar pageId={page?.id} available={!importing && !!project.pages.some(page => page.lines.length)} />}
@@ -136,9 +146,9 @@ export default function App() {
           onSelect={selectLine} onMove={(id, offset) => updatePage(page => ({ ...page, lines: reorderItems(page.lines, id, offset) }))} onDelete={deleteLine}
           onDropLine={(id, beforeId) => updatePage(page => ({ ...page, lines: moveItemBefore(page.lines, id, beforeId) }))}
           onScan={() => scan(page?.lines.filter(line => line.status !== 'success') || [])} onCancel={cancel} />}
-        workspace={page && image ? <AnnotationWorkspace key={page.id} image={image} lines={page.lines} selectedId={selectedId} disabled={busy}
+        workspace={page && image ? <AnnotationWorkspace key={`workspace-${page.id}`} image={image} lines={page.lines} selectedId={selectedId} disabled={busy}
           onSelect={setSelectedId} onCreate={createLine} onChange={changeBox} /> : <div className="loading-state">{imageError ? <Alert type="error" title={imageError} /> : <Spin />}</div>}
-        results={page && image ? <ResultsEditor key={page.id} pageId={page.id} image={image} lines={page.lines} selectedId={selectedId} busy={busy} onSelect={setSelectedId}
+        results={page && image ? <ResultsEditor key={`results-${page.id}`} pageId={page.id} image={image} lines={page.lines} selectedId={selectedId} busy={busy} onSelect={setSelectedId}
           onEdit={(id, text) => editLine(id, { text, edited: true })} onScan={line => scan([line])}
           onUseModel={id => { const line = page.lines.find(line => line.id === id); if (line) editLine(id, { text: line.modelText, edited: false }); }} /> : <aside className="results-panel" id="transcription-panel" />}
       />}

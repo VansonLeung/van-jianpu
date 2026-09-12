@@ -1,5 +1,6 @@
 import type { ImageSource, NoteLine, ScannerPage, ScannerProject } from '../types/scanner';
 import { validatePlaybackSettings } from './playback/notationPlayback';
+import { MAX_PROJECT_NAME_LENGTH, projectName } from './projectName';
 
 export const MAX_PROJECT_BYTES = 100 * 1024 * 1024;
 export const MAX_PROJECT_PAGES = 100;
@@ -31,6 +32,7 @@ function validateLine(value: unknown, image: ImageSource, lineIds: Set<string>):
 
 export function validateAndMigrateProject(value: unknown): ScannerProject {
   const project = record(value);
+  if (project.name !== undefined && (typeof project.name !== 'string' || !project.name.trim() || project.name.length > MAX_PROJECT_NAME_LENGTH)) invalid();
   if (typeof project.id !== 'string' || !project.id || ![1, 2].includes(Number(project.version))) invalid();
   if (project.version !== 1 && project.version !== 2) invalid();
   const sourcePages = project.version === 1 ? [{ id: `${project.id}-page`, image: project.image, lines: project.lines }] : project.pages;
@@ -46,6 +48,6 @@ export function validateAndMigrateProject(value: unknown): ScannerProject {
   });
   const activePageId = project.version === 1 ? pages[0].id : project.activePageId;
   if (pages.length ? typeof activePageId !== 'string' || !pageIds.has(activePageId) : activePageId !== null) invalid();
-  return { version: 2, id: project.id, pages, activePageId: activePageId as string | null,
+  return { version: 2, id: project.id, name: typeof project.name === 'string' ? project.name.trim() : projectName({ pages }), pages, activePageId: activePageId as string | null,
     ...(project.playback !== undefined ? { playback: validatePlaybackSettings(project.playback) } : {}) };
 }
