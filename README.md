@@ -1,6 +1,8 @@
 # van-jianpu
 
-Local browser application for drawing note-line rectangles, transcribing each crop through a vision LLM, and correcting the result beside the image.
+Application for drawing note-line rectangles, transcribing each crop through a vision LLM, and correcting the result beside the image.
+
+<img width="100%" alt="image" src="frontend/assets/s1.jpg" />
 
 ## Run the production build
 
