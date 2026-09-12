@@ -1,10 +1,10 @@
-# Jianpu Scanner v4
+# van-jianpu
 
 Local browser application for drawing note-line rectangles, transcribing each crop through a vision LLM, and correcting the result beside the image.
 
 ## Run the production build
 
-From `codes/v4`:
+From project root folder:
 
 ```sh
 npm --prefix frontend install
@@ -18,7 +18,7 @@ Open **http://127.0.0.1:3001**. The Node.js backend serves both `/api` and `fron
 
 ## Development
 
-Run in two terminals from `codes/v4`:
+Run in two terminals from project root folder:
 
 ```sh
 npm --prefix backend run dev
@@ -32,7 +32,7 @@ Open the Vite URL shown in the terminal (normally http://127.0.0.1:5173). Vite p
 
 ## Configuration
 
-The backend loads `codes/v4/.env` regardless of the working directory. Existing process environment variables take precedence. `.env.example` lists the settings; the existing `.env` was preserved.
+The backend loads project root folder/.env` regardless of the working directory. Existing process environment variables take precedence. `.env.example` lists the settings; the existing `.env` was preserved.
 
 | Variable | Purpose |
 | --- | --- |
