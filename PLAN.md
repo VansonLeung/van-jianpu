@@ -4,6 +4,7 @@ The decisions below supersede alternatives in the original planning notes retain
 
 - Local fullscreen browser app: Vite, React, TypeScript, Ant Design, React-Konva, and a Node.js/Express backend.
 - Independent `frontend` and `backend` packages, lockfiles, and `node_modules`. The backend also serves the Vite `frontend/dist` production build.
+- Electron desktop support uses a third independent `desktop` package. Bundle the compiled frontend, soundfont and backend; launch with no separately installed server. Keep a stable secure app origin for desktop IndexedDB, isolate the renderer, authenticate the private loopback backend, and exclude development credentials from packaged builds. Support local launches and OS-specific packaging; preserve browser mode.
 - Import multiple images as ordered project pages, with note lines nested beneath their corresponding image. View one page at a time; draw, select, move, resize, and delete note-line rectangles. Reorder pages and lines with drag handles or arrows; lines stay within their source page. Store coordinates in original image pixels; support zoom and pan.
 - Resize the right transcription panel with a draggable, keyboard-accessible divider; remember its width locally. Stack results below the image on narrow screens.
 - Prioritize the exact `0–7` digit sequence. Capture octave dots, accidentals, and barlines where readable; rhythm is secondary. Ignore lyrics and Chinese dynamics.
@@ -18,7 +19,7 @@ The decisions below supersede alternatives in the original planning notes retain
 - Erhu playback uses the supplied `frontend/assets/FS_Erhu_v2.sf2` through SpessaSynth/Web Audio. Defaults: `1=C4`, 90 quarter notes/minute, standalone per-note accidentals, `?` as an estimated silent quarter, and repeats off. Save key/register/tempo/volume/repeat settings in the project; retain compatibility with existing project files.
 - Play a line, page, project, or from a selected note; loop contiguous selections. Provide pause/resume/stop, independent playback highlighting, optional page following, and opt-in audition of single-note corrections. Musical edits or reordering stop playback; volume adjusts live. Honor repeats supports matched, nonnested simple repeats twice; line/page breaks add no time.
 - Use `analysis_outputs/552c8d531cf8f_row_03.png` as the initial real-world diagnostic. It contains compact digit groups, low-octave dots, underlines, bars, and Chinese dynamics. Broader accuracy claims need additional labeled samples.
-- PDF/MIDI/MusicXML file import/export, automatic rectangle detection, and Electron are deferred. Playback's internal MIDI sequence is not a file import/export feature.
+- PDF/MIDI/MusicXML file import/export and automatic rectangle detection are deferred. Playback's internal MIDI sequence is not a file import/export feature.
 
 Implementation and run instructions: [README.md](README.md).
 

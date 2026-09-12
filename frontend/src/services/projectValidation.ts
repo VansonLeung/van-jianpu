@@ -3,7 +3,7 @@ import { validatePlaybackSettings } from './playback/notationPlayback';
 
 export const MAX_PROJECT_BYTES = 100 * 1024 * 1024;
 export const MAX_PROJECT_PAGES = 100;
-function invalid(): never { throw new Error('This is not a valid Jianpu Scanner project.'); }
+function invalid(): never { throw new Error('This is not a valid Van Jianpu project.'); }
 function record(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) invalid();
   return value as Record<string, unknown>;

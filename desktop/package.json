@@ -1,0 +1,39 @@
+{
+  "name": "jianpu-scanner-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Jianpu image transcription, notation editing and Erhu playback",
+  "author": "Jianpu Scanner contributors",
+  "type": "module",
+  "main": "src/main.mjs",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "npm run build && node scripts/start.mjs",
+    "start:built": "node scripts/start.mjs",
+    "package": "npm run build && electron-builder --dir --publish never",
+    "dist": "npm run build && electron-builder --publish never",
+    "test": "node --test tests/backend-check.mjs && playwright test"
+  },
+  "dependencies": {
+    "dotenv": "^17.0.0",
+    "express": "^5.0.0",
+    "sharp": "^0.35.4",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "electron": "44.3.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "org.jianpuscanner.desktop",
+    "productName": "Jianpu Scanner",
+    "directories": { "output": "release" },
+    "files": ["src/**/*.mjs", "runtime/backend/dist/**/*.js", "runtime/backend/package.json", "runtime/frontend/dist/**/*", "package.json", "!**/.env", "!**/.env.*", "!node_modules/**/{test,tests,__tests__}/**/*"],
+    "asarUnpack": ["node_modules/sharp/**/*", "node_modules/@img/**/*"],
+    "npmRebuild": false,
+    "mac": { "category": "public.app-category.music", "target": ["dmg", "zip"] },
+    "win": { "target": ["nsis"] },
+    "linux": { "category": "AudioVideo", "target": ["AppImage"] }
+  }
+}

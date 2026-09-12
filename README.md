@@ -32,6 +32,36 @@ npm --prefix frontend run dev
 
 Open the Vite URL shown in the terminal (normally http://127.0.0.1:5173). Vite proxies `/api` to port 3001. If changing the backend port, also update the proxy in `frontend/vite.config.ts`.
 
+## Electron desktop app
+
+From the project root (`codes/v4` in this workspace):
+
+```sh
+npm --prefix frontend install
+npm --prefix backend install
+npm --prefix desktop install
+npm --prefix desktop start
+```
+
+The desktop launcher builds the frontend and backend, then opens **Van Jianpu** in Electron. No separate Node server or Vite terminal is needed. After a build, `npm --prefix desktop run start:built` launches immediately; rerun `desktop start` after changing frontend/backend code. `desktop` has its own package, lockfile, and `node_modules`, alongside the independent frontend/backend packages.
+
+The app includes image pages, line editing, the SVG renderer, Erhu playback, LLM settings, and project exports. Image/project inputs use native file pickers; exports offer a native save dialog, and clicking a crop opens a separate image window. The File menu can open the app's data folder. Window size/position are remembered. On macOS, closing the last window keeps the app running; use Quit to exit, or click its Dock icon to reopen it.
+
+Desktop projects and settings are stored separately from browser projects, under a stable `jianpu://scanner` origin in Electron's user-data folder. Closing/reopening the app preserves the current project even though its private backend uses a different port each launch. To move work between browser and desktop, export and import an editable `.jianpu.json` project. Only one instance uses a given desktop profile at a time.
+
+Source launches use the existing project `.env` as a fallback. Packaged applications **do not contain that file or its credentials**. In a packaged app, configure the provider through **LLM settings**, or place a private `.env` in **File → Open app data folder** and restart. Environment variables take precedence, then the desktop data-folder `.env`, then the source `.env` for development only. Keys entered in the settings drawer still last only for the current window session. The data folder is normally `~/Library/Application Support/Van Jianpu` on macOS, `%APPDATA%/Van Jianpu` on Windows, and `~/.config/Van Jianpu` on Linux. `JIANPU_DESKTOP_DATA_DIR` can select an isolated profile for testing.
+
+Build an unpacked application or distributable installers:
+
+```sh
+npm --prefix desktop run package
+npm --prefix desktop run dist
+```
+
+Outputs go to `desktop/release/`. Targets are macOS DMG/ZIP, Windows NSIS, and Linux AppImage. Build on the target operating system and architecture so `sharp`'s native libraries match; only the current host's build is verified locally. Packaged users do not need Node.js. Local builds can be unsigned; public distribution requires the appropriate platform signing/notarization setup. These scripts never publish artifacts automatically. The initial app uses Electron's default icon.
+
+The desktop runtime includes only compiled application assets and production dependencies; the build excludes source `.env` files, saved projects, and test fixtures. The renderer is sandboxed with Node integration disabled. A registered secure app protocol serves the UI and forwards API calls through a private authenticated loopback connection. No fixed port is required, and browser-mode serving remains unchanged. This follows Electron's [custom protocol](https://www.electronjs.org/docs/latest/api/protocol) and [renderer isolation](https://www.electronjs.org/docs/latest/tutorial/security) guidance.
+
 ## Configuration
 
 The backend loads project root folder/.env` regardless of the working directory. Existing process environment variables take precedence. `.env.example` lists the settings; the existing `.env` was preserved.
@@ -172,7 +202,7 @@ Digits are the primary recognition target. Unknown notes use a separate `?` toke
 | Duration extension | `-` |
 | Bars / repeats | `|` / `||` / `|:` / `:|` |
 
-The model is instructed to ignore lyrics, Chinese dynamics, key/time signatures, ornaments, and slurs. Review octave, rhythm, and barline marks manually; digit success does not imply a musically complete transcription. Automatic line detection, PDF input, MusicXML/MIDI file import/export, and Electron are outside this version.
+The model is instructed to ignore lyrics, Chinese dynamics, key/time signatures, ornaments, and slurs. Review octave, rhythm, and barline marks manually; digit success does not imply a musically complete transcription. Automatic line detection, PDF input, and MusicXML/MIDI file import/export are outside this version.
 
 ## Verification
 
@@ -182,6 +212,15 @@ After building both packages:
 npm --prefix backend test
 npm --prefix frontend run test:e2e
 ```
+
+For Electron, build its runtime and run its integration checks:
+
+```sh
+npm --prefix desktop run build
+npm --prefix desktop test
+```
+
+These launch real Electron windows with temporary profiles and a mock LLM provider, then check sandboxing, native image import, the bundled API and `sharp`, note editing, export, recovery after restart, crop windows, and actual Erhu audio output. Set `JIANPU_DESKTOP_EXECUTABLE` to a packaged executable path to run the same checks against a packaged build. Desktop tests require a graphical session (or Xvfb on Linux).
 
 If Chromium is not installed for Playwright, run `npx playwright install chromium` inside `frontend` first. Browser checks launch the production backend on port 3101 and mock LLM responses. They cover drawing, source coordinates, page/line ordering, panel resizing, note editing, scans across page switches, refresh recovery, legacy migration, settings, and project import/export. Playback checks load the actual bundled Erhu soundfont and measure Web Audio output for play/pause/resume, loops, and edits; they also check silent placeholders, page following, load failures, and settings recovery. Pure timing checks cover pitch mapping, durations, and repeats. Backend integration checks use a local mock provider with the supplied real image fixture.
 

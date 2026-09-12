@@ -101,7 +101,7 @@ test('prose and truncated responses cannot silently become a successful transcri
 test('the Node backend serves the built app and isolates unknown API routes', async () => {
   const response = await fetch(origin);
   assert.equal(response.status, 200);
-  assert.match(await response.text(), /Jianpu Scanner/);
+  assert.match(await response.text(), /Van Jianpu/);
   const missing = await fetch(`${origin}/api/missing`);
   assert.equal(missing.status, 404);
   assert.match(missing.headers.get('content-type') || '', /json/);

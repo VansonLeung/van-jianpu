@@ -6,3 +6,5 @@
 test-results/
 playwright-report/
 *.log
+desktop/runtime/
+desktop/release/

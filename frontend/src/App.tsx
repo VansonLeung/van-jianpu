@@ -109,11 +109,11 @@ export default function App() {
   return <PlaybackProvider project={project} onSettings={playback => updateProject(previous => previous && ({ ...previous, playback }))}
     onFollowPage={id => updateProject(previous => previous && ({ ...previous, activePageId: id }))}><div className="scanner-app">
     <header className="app-toolbar">
-      <div className="document-title"><PictureOutlined /><span title={page?.image.name}>{page ? `Page ${project!.pages.indexOf(page) + 1} · ${page.image.name}` : 'Jianpu Scanner'}</span></div>
+      <div className="document-title"><PictureOutlined /><span title={page?.image.name}>{page ? `Page ${project!.pages.indexOf(page) + 1} · ${page.image.name}` : 'Van Jianpu'}</span></div>
       <Space size={8} wrap>
         <Button aria-label="Add images" icon={<UploadOutlined />} disabled={!ready || busy || importing} onClick={() => imageInput.current?.click()}>Add images</Button>
         <Button aria-label="Open project" icon={<FolderOpenOutlined />} disabled={!ready || busy || importing} onClick={() => projectInput.current?.click()}>Open project</Button>
-        <Dropdown menu={{ items: [{ key: 'text', label: 'Jianpu text (.txt)', disabled: !project?.pages.some(page => page.lines.length) }, { key: 'svg', label: 'Rendered notation (.svg)', disabled: !project?.pages.length }, { key: 'project', label: 'Editable project (.jianpu.json)' }], onClick: ({ key }) => exportFile(key) }} disabled={!project}>
+        <Dropdown trigger={['click']} menu={{ items: [{ key: 'text', label: 'Jianpu text (.txt)', disabled: !project?.pages.some(page => page.lines.length) }, { key: 'svg', label: 'Rendered notation (.svg)', disabled: !project?.pages.length }, { key: 'project', label: 'Editable project (.jianpu.json)' }], onClick: ({ key }) => exportFile(key) }} disabled={!project}>
           <Button aria-label="Export" icon={<DownloadOutlined />}>Export</Button>
         </Dropdown>
         <Button aria-label="LLM settings" icon={<SettingOutlined />} disabled={busy} onClick={() => setSettingsOpen(true)} />
