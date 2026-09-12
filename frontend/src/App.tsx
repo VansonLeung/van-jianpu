@@ -8,6 +8,7 @@ import { LlmSettingsDrawer } from './components/LlmSettingsDrawer';
 import { ResizableEditorLayout } from './components/ResizableEditorLayout';
 import { PlaybackProvider } from './components/playback/PlaybackProvider';
 import { PlaybackToolbar } from './components/playback/PlaybackToolbar';
+import { projectSvg } from './services/rendering/jianpuSvg';
 import { useScannerProject } from './hooks/useScannerProject';
 import { useLineScanning } from './hooks/useLineScanning';
 import { useLlmSettings } from './hooks/useLlmSettings';
@@ -93,6 +94,10 @@ export default function App() {
     if (!project) return;
     const name = project.pages[0]?.image.name.replace(/\.[^.]+$/, '') || 'jianpu';
     if (format === 'project') downloadFile(`${name}.jianpu.json`, JSON.stringify(project), 'application/json');
+    else if (format === 'svg') {
+      try { downloadFile(`${name}.svg`, projectSvg(project), 'image/svg+xml;charset=utf-8'); }
+      catch (error) { message.error(error instanceof Error ? error.message : 'Unable to render notation.'); }
+    }
     else {
       const unresolved = project.pages.some(page => page.lines.some(line => line.status !== 'success' || !line.text.trim()));
       const apply = () => downloadFile(`${name}.txt`, projectTranscriptionText(project), 'text/plain;charset=utf-8');
@@ -108,7 +113,7 @@ export default function App() {
       <Space size={8} wrap>
         <Button aria-label="Add images" icon={<UploadOutlined />} disabled={!ready || busy || importing} onClick={() => imageInput.current?.click()}>Add images</Button>
         <Button aria-label="Open project" icon={<FolderOpenOutlined />} disabled={!ready || busy || importing} onClick={() => projectInput.current?.click()}>Open project</Button>
-        <Dropdown menu={{ items: [{ key: 'text', label: 'Jianpu text (.txt)', disabled: !project?.pages.some(page => page.lines.length) }, { key: 'project', label: 'Editable project (.jianpu.json)' }], onClick: ({ key }) => exportFile(key) }} disabled={!project}>
+        <Dropdown menu={{ items: [{ key: 'text', label: 'Jianpu text (.txt)', disabled: !project?.pages.some(page => page.lines.length) }, { key: 'svg', label: 'Rendered notation (.svg)', disabled: !project?.pages.length }, { key: 'project', label: 'Editable project (.jianpu.json)' }], onClick: ({ key }) => exportFile(key) }} disabled={!project}>
           <Button aria-label="Export" icon={<DownloadOutlined />}>Export</Button>
         </Dropdown>
         <Button aria-label="LLM settings" icon={<SettingOutlined />} disabled={busy} onClick={() => setSettingsOpen(true)} />

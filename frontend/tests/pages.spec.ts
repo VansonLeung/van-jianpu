@@ -96,7 +96,7 @@ test('page and line arrows/drag order survive text and JSON export, reopening, a
 
 test('switching pages preserves note history and routes scan results to the original page', async ({ page }) => {
   await openProject(page);
-  const notes = page.getByRole('listbox', { name: 'Notes for line 1' });
+  const notes = page.getByRole('listbox', { name: 'Notes for line 1', exact: true });
   await notes.getByRole('option').first().click(); await page.keyboard.press('6');
   await expect(editor(page)).toHaveValue('6_//');
   await page.getByRole('button', { name: 'Select page 2', exact: true }).click();

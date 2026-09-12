@@ -1,6 +1,6 @@
-# Simple Jianpu rendering proposal
+# Simple Jianpu rendering design
 
-Add a live SVG preview to each transcription line using the existing `parseNoteNotation` output. Keep the text as the source of truth and share token selection, keyboard shortcuts, and context-menu commands with the current editor. This is a proposal; a score renderer has not been implemented in this change.
+Implemented: a live SVG preview for transcription lines using the existing `parseNoteNotation` output. Text remains the source of truth; selection, keyboard shortcuts, context-menu commands, undo, and playback highlighting are shared with the existing editor. Previews open automatically for the selected line, with per-line show/hide controls. Individual lines and ordered project page sections can be exported as standalone SVG.
 
 ## Rendering choices
 
@@ -27,7 +27,7 @@ Use SVG for notation and keep Konva for image annotation. The renderer should be
 | `|`, `||`, `|:`, `:|` | Single/double bars and repeat bars with repeat dots |
 | `?` | Visible question mark with an unreadable-note highlight |
 
-For example, `#4_// 5^/ 0 | ?` would show a sharp 4 with two underlines and a low-octave dot below them, a 5 with one upper dot and one underline, a rest, a bar, and an unknown note. The raw string remains available for editing and copying.
+For example, `#4_// 5^/ 0 | ?` shows a sharp 4 with two underlines and a low-octave dot below them, a 5 with one upper dot and one underline, a rest, a bar, and an unknown note. The raw string remains available for editing and copying.
 
 ## Layout
 
@@ -47,10 +47,10 @@ Start with separate underlines for each note. Shared underlines across groups re
 - Invalid or incomplete input shows a local parse message while retaining all input. Avoid presenting the previous valid preview as if it represented the current text.
 - Selecting a rendered note can focus its source **line crop**. Exact note-to-image highlighting needs individual note bounding boxes, which are not currently stored.
 
-## Suggested implementation order
+## Implementation and extensions
 
-1. Add a pure `layoutJianpuTokens` function and a `JianpuLinePreview` SVG component. Verify combinations of low dots and three underlines, high octaves, dotted rests, accidentals, repeats, unknowns, and narrow widths.
-2. Add a Preview toggle in result cards, first enabled for the selected line. Update it live and connect it to existing selection, context menus, and undo. Collapsed previews avoid rendering every off-screen line at once.
-3. Add SVG download of a line or the ordered project pages, with page breaks and consistent margins. Later consider print/PDF, explicit note grouping, and optional key/time metadata as separate additions.
+1. `services/rendering/jianpuLayout.ts` produces glyph positions and drawing primitives. Digits use an explicit 16-unit advance at a 26-unit font size, with reserved space for accidentals and dots; export and preview share these metrics. `components/notes/JianpuLinePreview.tsx` renders the interactive SVG and observes available width. Tests cover low dots with three underlines, high octaves, dotted rests, accidentals, repeats, unknowns, and narrow widths.
+2. The result-card toggle, zoom controls, shared selection/context menus/undo, and playback marker are implemented. Collapsed previews avoid rendering every line at once. Zoom and explicit visibility choices are local to the mounted editor; notation and edits retain the existing project persistence.
+3. `services/rendering/jianpuSvg.ts` writes standalone line and project SVGs from the same layout. Project exports use ordered, labeled page sections and consistent margins in a single SVG. Print/PDF pagination, explicit note grouping, and key/time headings remain separate extensions.
 
-The first step would make corrected text visually checkable beside its source crop without adding another recognition request or changing the project format.
+Corrected text can now be checked visually beside its source crop without another recognition request or a project format change.

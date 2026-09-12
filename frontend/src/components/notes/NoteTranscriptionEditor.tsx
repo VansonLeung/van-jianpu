@@ -10,11 +10,12 @@ import { NoteEditingHelp } from './NoteEditingHelp';
 import { NoteMenuPopup } from './NoteMenuPopup';
 import { usePlayback } from '../playback/PlaybackProvider';
 import { NotePlaybackActions } from '../playback/NotePlaybackActions';
+import { JianpuLinePreview } from './JianpuLinePreview';
 
-interface Props { pageId: string; lineId: string; lineNumber: number; text: string; onChange: (text: string) => void }
+interface Props { pageId: string; lineId: string; lineNumber: number; text: string; selected: boolean; onChange: (text: string) => void }
 interface MarkupEdit { index: number; value: string; source: string; error: string }
 
-export function NoteTranscriptionEditor({ pageId, lineId, lineNumber, text, onChange }: Props) {
+export function NoteTranscriptionEditor({ pageId, lineId, lineNumber, text, selected, onChange }: Props) {
   const playback = usePlayback();
   const parsed = useMemo(() => parseNoteNotation(text), [text]);
   const tokens = parsed.tokens;
@@ -22,12 +23,22 @@ export function NoteTranscriptionEditor({ pageId, lineId, lineNumber, text, onCh
   const selection = history.selection.filter(index => index >= 0 && index < tokens.length);
   const state = getSelectionCapabilities(tokens, selection);
   const view = useRef<HTMLDivElement>(null);
+  const previewView = useRef<HTMLDivElement>(null);
+  const activeView = useRef<'tokens' | 'preview'>('tokens');
+  const [previewOverride, setPreviewOverride] = useState<boolean | null>(null);
+  const showPreview = previewOverride ?? selected;
   const plainText = useRef<HTMLDivElement>(null);
   const anchor = useRef(0);
   const cursor = useRef(0);
   const dragging = useRef(false);
-  const [contextOpen, setContextOpen] = useState(false);
-  const [actionsOpen, setActionsOpen] = useState(false);
+  const [contextOpen, updateContextOpen] = useState(false);
+  const [contextOpening, setContextOpening] = useState(0);
+  const [actionsOpen, updateActionsOpen] = useState(false);
+  const [actionsOpening, setActionsOpening] = useState(0);
+  // AntD caches hidden popup contents. A fresh key restores keyboard focus on
+  // every opening, even if the cached popup never received its closed props.
+  const setContextOpen = (open: boolean) => { if (open) setContextOpening(n => n + 1); updateContextOpen(open); };
+  const setActionsOpen = (open: boolean) => { if (open) setActionsOpening(n => n + 1); updateActionsOpen(open); };
   const [rhythmOpen, setRhythmOpen] = useState(false);
   const [advance, setAdvance] = useState(false);
   const [markupEdit, setMarkupEdit] = useState<MarkupEdit | null>(null);
@@ -38,7 +49,7 @@ export function NoteTranscriptionEditor({ pageId, lineId, lineNumber, text, onCh
     window.addEventListener('blur', finish);
     return () => { window.removeEventListener('pointerup', finish); window.removeEventListener('pointercancel', finish); window.removeEventListener('blur', finish); };
   }, []);
-  const focusView = () => view.current?.focus({ preventScroll: true });
+  const focusView = () => (activeView.current === 'preview' && previewView.current ? previewView.current : view.current)?.focus({ preventScroll: true });
   function select(index: number, extend = false, toggle = false) {
     cursor.current = index;
     let next: number[];
@@ -142,8 +153,9 @@ export function NoteTranscriptionEditor({ pageId, lineId, lineNumber, text, onCh
       <Tooltip title="Undo note edit"><Button size="small" type="text" aria-label={`Undo note edit for line ${lineNumber}`} icon={<UndoOutlined />} disabled={!history.canUndo} onClick={() => command('undo')} /></Tooltip>
       <Tooltip title="Redo note edit"><Button size="small" type="text" aria-label={`Redo note edit for line ${lineNumber}`} icon={<RedoOutlined />} disabled={!history.canRedo} onClick={() => command('redo')} /></Tooltip>
       <Dropdown menu={{ ...menu, 'aria-label': 'Note actions' }} trigger={['click']} open={actionsOpen} onOpenChange={setActionsOpen} transitionName=""
-        popupRender={node => <NoteMenuPopup open={actionsOpen}>{node}</NoteMenuPopup>}><Button size="small" type="text" aria-label={`Note actions for line ${lineNumber}`} icon={<MoreOutlined />} /></Dropdown>
+        popupRender={node => <NoteMenuPopup key={actionsOpening} open={actionsOpen}>{node}</NoteMenuPopup>}><Button size="small" type="text" aria-label={`Note actions for line ${lineNumber}`} icon={<MoreOutlined />} /></Dropdown>
     </div>
+    <div className="jianpu-preview-toggle"><Checkbox checked={showPreview} aria-label={`Show Jianpu preview for line ${lineNumber}`} onChange={event => setPreviewOverride(event.target.checked)}>Jianpu preview</Checkbox></div>
     {parsed.error ? <Alert type="warning" title={parsed.error} /> : <>
       <div className="note-attribute-toolbar">
         <Dropdown menu={{ items: subdivisionMenuItems(tokens, selection), onClick: ({ key }) => command(key) }} trigger={['click']} open={rhythmOpen} onOpenChange={setRhythmOpen} transitionName="">
@@ -154,8 +166,17 @@ export function NoteTranscriptionEditor({ pageId, lineId, lineNumber, text, onCh
       </div>
       {rhythmOpen && <span className="rhythm-picker-hint" role="status">Press 1–4: no underline, eighth, sixteenth, thirty-second. Esc cancels.</span>}
       <Dropdown menu={{ ...menu, 'aria-label': 'Note context menu' }} trigger={['contextMenu']} open={contextOpen} onOpenChange={setContextOpen} transitionName=""
-        popupRender={node => <NoteMenuPopup open={contextOpen}>{node}</NoteMenuPopup>}>
-        <div className="note-token-list" ref={view} role="listbox" aria-label={`Notes for line ${lineNumber}`} aria-multiselectable="true" tabIndex={0}
+        popupRender={node => <NoteMenuPopup key={contextOpening} open={contextOpen}>{node}</NoteMenuPopup>}>
+        <div className="note-interactive-views">
+        {showPreview && <JianpuLinePreview tokens={tokens} lineId={lineId} lineNumber={lineNumber} selection={selection}
+          playingIndex={playback.marker?.lineId === lineId ? playback.marker.tokenIndex : null} viewRef={previewView} onFocus={() => { activeView.current = 'preview'; }}
+          onPointerDown={(index, event) => {
+            if (event.button !== 0) return;
+            event.preventDefault(); activeView.current = 'preview'; focusView(); select(index, event.shiftKey, event.metaKey || event.ctrlKey); dragging.current = !event.metaKey && !event.ctrlKey;
+          }} onPointerEnter={(index, event) => { if (dragging.current && event.buttons === 1) select(index, true); }}
+          onSelect={index => { activeView.current = 'preview'; select(index); focusView(); }}
+          onContextMenu={index => { activeView.current = 'preview'; if (!selection.includes(index)) select(index); cursor.current = index; }} />}
+        <div className="note-token-list" ref={view} role="listbox" aria-label={`Notes for line ${lineNumber}`} aria-multiselectable="true" tabIndex={0} onFocus={() => { activeView.current = 'tokens'; }}
           aria-activedescendant={selection.length ? `note-${lineId}-${selection.includes(cursor.current) ? cursor.current : selection[0]}` : undefined}>
           {!tokens.length && <span className="note-empty">Scan a line or insert a note to start.</span>}
           {tokens.map((token, index) => <button key={index} id={`note-${lineId}-${index}`} type="button" role="option" tabIndex={-1}
@@ -164,15 +185,16 @@ export function NoteTranscriptionEditor({ pageId, lineId, lineNumber, text, onCh
             className={`note-token token-${token.kind} ${selection.includes(index) ? 'is-selected' : ''} ${playback.marker?.lineId === lineId && playback.marker.tokenIndex === index ? 'is-playing' : ''}`}
             onPointerDown={event => {
               if (event.button !== 0) return;
-              event.preventDefault(); focusView();
+              event.preventDefault(); activeView.current = 'tokens'; focusView();
               select(index, event.shiftKey, event.metaKey || event.ctrlKey);
               dragging.current = !event.metaKey && !event.ctrlKey;
             }}
             onPointerEnter={event => { if (dragging.current && event.buttons === 1) select(index, true); }}
-            onClick={event => { if (event.detail === 0) { select(index); focusView(); } }}
-            onContextMenu={() => { if (!selection.includes(index)) select(index); cursor.current = index; }}>
+            onClick={event => { if (event.detail === 0) { activeView.current = 'tokens'; select(index); focusView(); } }}
+            onContextMenu={() => { activeView.current = 'tokens'; if (!selection.includes(index)) select(index); cursor.current = index; }}>
             {token.text}
           </button>)}
+        </div>
         </div>
       </Dropdown>
       <NotePlaybackActions pageId={pageId} lineId={lineId} selection={selection} valid={!parsed.error} />

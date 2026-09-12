@@ -14,10 +14,10 @@ async function openEditor(page: Page, text: string) {
   await page.mouse.move(bounds.x + bounds.width - 2, bounds.y + bounds.height - 2, { steps: 10 });
   await page.mouse.up();
   await page.getByRole('textbox', { name: 'Transcription for line 1' }).fill(text);
-  await expect(page.getByRole('listbox', { name: 'Notes for line 1' })).toBeVisible();
+  await expect(page.getByRole('listbox', { name: 'Notes for line 1', exact: true })).toBeVisible();
 }
 const editor = (page: Page) => page.getByRole('textbox', { name: 'Transcription for line 1' });
-const notes = (page: Page) => page.getByRole('listbox', { name: 'Notes for line 1' }).getByRole('option');
+const notes = (page: Page) => page.getByRole('listbox', { name: 'Notes for line 1', exact: true }).getByRole('option');
 
 test('context menu preserves a range; keyboard and menu assign exact subdivisions with one-step undo', async ({ page }) => {
   await openEditor(page, '#4_/// 6.// 0/ | ?');
@@ -55,7 +55,7 @@ test('right-clicking an unselected rest selects only it and disables pitch-only 
   await expect(page.getByRole('menuitem', { name: /^Accidental/ })).toHaveAttribute('aria-disabled', 'true');
   await page.keyboard.press('Escape');
   await expect(notes(page).nth(2)).toHaveAttribute('aria-selected', 'true');
-  await page.getByRole('listbox').focus();
+  await page.getByRole('listbox', { name: 'Notes for line 1', exact: true }).focus();
   await page.keyboard.press('Alt+ArrowUp');
   await expect(editor(page)).toHaveValue('1_// 2^/ 0/ ?');
   await page.keyboard.press('Shift+F10');
@@ -115,7 +115,7 @@ test('plain text keeps native typing and invalid input; note navigation and adva
   await page.keyboard.press('F8');
   await expect(notes(page).nth(2)).toHaveAttribute('aria-selected', 'true');
   await page.getByRole('checkbox', { name: 'Advance after digit correction' }).check();
-  await page.getByRole('listbox').focus();
+  await page.getByRole('listbox', { name: 'Notes for line 1', exact: true }).focus();
   await page.keyboard.press('3');
   await expect(editor(page)).toHaveValue('1 2 3 4 ?');
   await expect(notes(page).nth(3)).toHaveAttribute('aria-selected', 'true');

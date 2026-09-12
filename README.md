@@ -69,9 +69,17 @@ Projects support up to 100 image pages, 200 lines per page, and 100 MB of embedd
 
 Drag the vertical handle between the image workspace and transcription panel. The width is remembered in this browser. Double-click the handle to reset to 390 px. Focus it with Tab and use Left/Right for 20 px changes, Shift+Left/Right for 50 px, or Home/End for minimum/maximum width. The panel stays at least 300 px wide and leaves room for the image workspace. On narrow screens, results stack below the workspace and the handle is hidden.
 
-### Proposed Jianpu preview
+### Jianpu preview and SVG export
 
-Use a React SVG preview generated directly from the existing parsed note tokens, with digits, accidentals, octave dots, rhythm dots, and 0–3 underlines. For example, `#4_//` renders as a sharp 4 with two underlines and a low-octave dot below them. Clicking a rendered note would select the same editable token. The [Jianpu rendering proposal](JIANPU_RENDERING_PROPOSAL.md) describes layout, interaction, and a staged implementation; this preview is proposed and is not yet implemented.
+The selected line shows a live **Jianpu preview** above its markup tokens. Use the checkbox on a result card to explicitly show or hide that line's preview. The SVG renders digits, rests, accidentals, octave dots, rhythm dots, 0–3 underlines, duration dashes, and single/double/repeat bars. For example, `#4_//` becomes a sharp 4 with two underlines and a low-octave dot beneath them. Unknown notes remain visible as `?`.
+
+Click, Shift-click, Cmd/Ctrl-click, or drag across rendered notes to use the same selection as the markup tokens and text field. Right-click, Shift+F10, editing shortcuts, and undo work in either view. A gold border tracks Erhu playback independently of the blue editing selection; Follow notes prefers the visible SVG preview. Selecting a rendered note also selects its source line crop, but individual note locations in the original image are not stored.
+
+Preview **− / +** controls adjust notation size from 75% to 200%; click the percentage to reset. The preview wraps at barlines when possible, or between complete tokens for long measures, and reflows when the right panel is resized. Octave dots have separate space above the digits and beneath any underlines. Invalid or incomplete text hides the preview and keeps the original input with a parse message.
+
+Use **SVG** beside the preview's zoom controls to download that line with its current wrapping. Use **Export → Rendered notation (.svg)** for one standalone SVG containing all pages and lines in reading order, with labeled page sections. Exports contain notation without selection or playback decorations, and require no app styles, source images, or audio assets. Empty transcriptions appear as `?` with an empty-line label in project exports; invalid notation blocks the export with the affected page and line identified.
+
+Underlines are drawn separately per note. The current markup does not record shared underline groups, beat alignment, slurs, or key/time headings; these are not inferred. See the [rendering design](JIANPU_RENDERING_PROPOSAL.md) for the layout approach and remaining extensions. Print/PDF pagination is separate from the SVG's page sections.
 
 ## Erhu playback
 

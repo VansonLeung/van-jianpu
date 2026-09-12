@@ -30,7 +30,7 @@ function LineEditor({ pageId, image, line, index, selected, busy, onSelect, onEd
       <Button size="small" type="text" icon={<ReloadOutlined />} aria-label={`Scan line ${index + 1}`} disabled={busy || !!preview.error} onClick={onScan}>Scan</Button>
     </div>
     {preview.url ? <a className="crop-preview" href={preview.url} target="_blank" rel="noreferrer" title="Open crop at full size"><img src={preview.url} alt={`Crop for line ${index + 1}`} /></a> : <Alert title={preview.error} type="error" />}
-    <NoteTranscriptionEditor pageId={pageId} lineId={line.id} lineNumber={index + 1} text={line.text} onChange={onEdit} />
+    <NoteTranscriptionEditor pageId={pageId} lineId={line.id} lineNumber={index + 1} text={line.text} selected={selected} onChange={onEdit} />
     <div className="result-meta"><span>{line.edited ? 'Manually edited' : 'Model transcription'}{line.text.includes('?') ? ' · Contains unreadable notes' : ''}</span></div>
     {line.status === 'stale' && <Alert type="warning" title="The crop changed. Scan again to update the transcription." />}
     {line.error && <Alert type="error" title={line.error} />}

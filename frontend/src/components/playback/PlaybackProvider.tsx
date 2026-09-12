@@ -120,7 +120,7 @@ export function PlaybackProvider({ project, onSettings, onFollowPage, children }
   useEffect(() => {
     if (!follow || !marker) return;
     if (latest.current.project?.activePageId !== marker.pageId) latest.current.onFollowPage(marker.pageId);
-    const timer = setTimeout(() => document.getElementById(`note-${marker.lineId}-${marker.tokenIndex}`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' }), 80);
+    const timer = setTimeout(() => (document.getElementById(`rendered-note-${marker.lineId}-${marker.tokenIndex}`) || document.getElementById(`note-${marker.lineId}-${marker.tokenIndex}`))?.scrollIntoView({ block: 'nearest', inline: 'nearest' }), 80);
     return () => clearTimeout(timer);
   }, [follow, marker?.pageId, marker?.lineId, marker?.tokenIndex]);
   const actions = useRef({ play, pause, resume }); actions.current = { play, pause, resume };

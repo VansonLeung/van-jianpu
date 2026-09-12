@@ -106,7 +106,7 @@ test('project playback follows pages and includes unknown/rest timing; selection
   await expect(page.getByRole('button', { name: 'Select page 2', exact: true })).toHaveAttribute('aria-expanded', 'true', { timeout: 5000 });
   await expect.poll(() => audioLevel(page)).toBeGreaterThan(0.001);
   await expect(status(page)).toHaveText('Stopped', { timeout: 5000 });
-  const notes = page.getByRole('listbox', { name: 'Notes for line 1' }).getByRole('option');
+  const notes = page.getByRole('listbox', { name: 'Notes for line 1', exact: true }).getByRole('option');
   await notes.first().click();
   await page.getByRole('button', { name: 'Loop selection', exact: true }).click();
   await expect(status(page)).toHaveText('Playing');
@@ -131,7 +131,7 @@ test('playback settings persist, invalid input fails clearly, and correction aud
   await page.getByText('Editable project (.jianpu.json)', { exact: true }).click();
   const saved = validateAndMigrateProject(JSON.parse(await readFile((await (await download).path())!, 'utf8')));
   expect(saved.playback).toEqual({ ...DEFAULT_PLAYBACK, tempo: 120, tonic: 2 });
-  const notes = page.getByRole('listbox', { name: 'Notes for line 1' });
+  const notes = page.getByRole('listbox', { name: 'Notes for line 1', exact: true });
   await notes.getByRole('option').first().click(); await page.keyboard.press('3');
   await expect(status(page)).toHaveText('Stopped');
   await page.getByRole('checkbox', { name: 'Audition corrections' }).check();
@@ -154,12 +154,12 @@ test('all-rest passages retain duration, short selections loop, and Space leaves
   const text = page.getByRole('textbox', { name: 'Transcription for line 1' });
   await text.fill('1///'); await text.press('End'); await text.press('Space');
   await expect(text).toHaveValue('1/// '); await expect(status(page)).toHaveText('Stopped');
-  await page.getByRole('listbox').getByRole('option').first().click();
+  await page.getByRole('listbox', { name: 'Notes for line 1', exact: true }).getByRole('option').first().click();
   await page.getByRole('button', { name: 'Loop selection', exact: true }).click();
   await expect(status(page)).toHaveText('Playing');
   await page.waitForTimeout(400); // Several cycles of a thirty-second note.
   await expect.poll(() => audioLevel(page)).toBeGreaterThan(0.001);
-  await page.getByRole('listbox').focus(); await page.keyboard.press('Space');
+  await page.getByRole('listbox', { name: 'Notes for line 1', exact: true }).focus(); await page.keyboard.press('Space');
   await expect(status(page)).toHaveText('Paused');
   await page.keyboard.press('Space'); await expect(status(page)).toHaveText('Playing');
   await page.getByRole('button', { name: 'Stop', exact: true }).click();

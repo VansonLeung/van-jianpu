@@ -79,6 +79,23 @@ button, input, textarea { font: inherit; }
 .app-status > span:last-child { margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .save-error { color: #cf3939; }
 .note-editor { margin-top: 8px; }
+.jianpu-preview-toggle { margin-bottom: 8px; }
+.jianpu-preview-toggle .ant-checkbox-label { font-size: 11px; }
+.jianpu-preview { min-width: 0; margin-bottom: 10px; }
+.jianpu-preview-toolbar { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; font-size: 10px; color: #69748b; }
+.jianpu-preview-toolbar > span { margin-right: auto; }
+.jianpu-preview-toolbar .ant-btn { font-size: 10px; }
+.notation-zoom-reset { background: transparent; color: inherit; border: 0; cursor: pointer; padding: 3px; min-width: 35px; font-size: 10px; }
+.jianpu-preview-viewport { max-height: 300px; overflow: auto; border: 1px solid #dfe5ed; border-radius: 6px; background: #fff; color: #172033; outline: none; user-select: none; touch-action: pan-y; }
+.jianpu-preview-viewport:focus-visible { outline: 2px solid #315eea; outline-offset: 2px; }
+.jianpu-preview-viewport svg { display: block; }
+.jianpu-preview-viewport > .note-empty { display: block; padding: 14px; }
+.jianpu-glyph { cursor: pointer; }
+.jianpu-hit-area { fill: transparent; stroke: transparent; stroke-width: 1.4; }
+.jianpu-glyph:hover .jianpu-hit-area { fill: #f0f4ff; }
+.jianpu-glyph.is-unknown .jianpu-hit-area { fill: #fff7e3; }
+.jianpu-glyph.is-selected .jianpu-hit-area { fill: #e1e9ff; stroke: #5278ed; }
+.jianpu-glyph.is-playing .jianpu-hit-area { stroke: #d99000; stroke-width: 2.5; }
 .playback-toolbar { flex-shrink: 0; padding: 8px 16px; background: #f9fafc; border-bottom: 1px solid #e2e7ef; font-size: 11px; }
 .playback-controls, .playback-settings { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .playback-controls { margin-bottom: 7px; }
